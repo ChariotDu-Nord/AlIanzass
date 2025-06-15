@@ -1,0 +1,83 @@
+// Configuración de Firebase
+const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+};
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Función para guardar los puntos en Firestore
+async function savePointsToFirestore() {
+    try {
+        await db.collection("alianzas").doc("puntuaciones").set({
+            scores: scores,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showMessage('Puntos guardados en Firebase correctamente', 'success');
+    } catch (error) {
+        console.error("Error al guardar en Firestore: ", error);
+        showMessage('Error al guardar en Firebase: ' + error.message, 'error');
+    }
+}
+
+// Función para cargar los puntos desde Firestore
+async function loadPointsFromFirestore() {
+    try {
+        const doc = await db.collection("alianzas").doc("puntuaciones").get();
+        if (doc.exists) {
+            const data = doc.data();
+            scores = data.scores;
+            updateScores();
+            showMessage('Puntos cargados desde Firebase correctamente', 'success');
+        } else {
+            showMessage('No se encontraron datos en Firebase', 'info');
+        }
+    } catch (error) {
+        console.error("Error al cargar desde Firestore: ", error);
+        showMessage('Error al cargar desde Firebase: ' + error.message, 'error');
+    }
+}
+
+// Sobreescribir las funciones de guardar y cargar para usar Firebase
+function saveToDB() {
+    savePointsToFirestore();
+}
+
+function loadFromDB() {
+    loadPointsFromFirestore();
+}
+
+// Función para verificar si el usuario es admin
+async function checkAdmin() {
+    const password = prompt("Ingresa la contraseña de admin:");
+    try {
+        const doc = await db.collection("config").doc("admin").get();
+        if (doc.exists && doc.data().password === password) {
+            document.getElementById('admin-btn').style.display = 'block';
+            document.querySelectorAll('.btn-add, .btn-subtract').forEach(btn => {
+                btn.style.display = 'flex';
+            });
+            showMessage('Modo administrador activado', 'success');
+            return true;
+        } else {
+            showMessage('Contraseña incorrecta', 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error("Error al verificar admin: ", error);
+        showMessage('Error al verificar credenciales', 'error');
+        return false;
+    }
+}
+
+// Verificar admin al cargar la página (opcional)
+window.addEventListener('DOMContentLoaded', () => {
+    // Puedes comentar esto si no quieres que se pregunte al cargar
+    // checkAdmin();
+});
